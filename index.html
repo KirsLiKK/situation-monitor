@@ -310,6 +310,110 @@
             font-size: 0.7rem;
         }
 
+        /* Global Map */
+        .world-map {
+            width: 100%;
+            height: 350px;
+            position: relative;
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        .world-map svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .world-map .land {
+            fill: #1a1a1a;
+            stroke: #2a2a2a;
+            stroke-width: 0.5;
+        }
+
+        .hotspot {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hotspot-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .hotspot-dot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            animation: pulse-ring 2s ease-out infinite;
+        }
+
+        .hotspot.low .hotspot-dot {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+        }
+        .hotspot.low .hotspot-dot::before {
+            background: var(--green);
+        }
+
+        .hotspot.elevated .hotspot-dot {
+            background: var(--yellow);
+            box-shadow: 0 0 15px var(--yellow);
+        }
+        .hotspot.elevated .hotspot-dot::before {
+            background: var(--yellow);
+        }
+
+        .hotspot.high .hotspot-dot {
+            background: var(--red);
+            box-shadow: 0 0 20px var(--red);
+            animation: glow-high 1s ease-in-out infinite alternate;
+        }
+        .hotspot.high .hotspot-dot::before {
+            background: var(--red);
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                width: 100%;
+                height: 100%;
+                opacity: 0.8;
+            }
+            100% {
+                width: 300%;
+                height: 300%;
+                opacity: 0;
+            }
+        }
+
+        @keyframes glow-high {
+            from { box-shadow: 0 0 15px var(--red); }
+            to { box-shadow: 0 0 30px var(--red), 0 0 50px var(--red); }
+        }
+
+        .hotspot-label {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.55rem;
+            color: var(--text);
+            white-space: nowrap;
+            text-shadow: 0 0 3px var(--bg), 0 0 5px var(--bg);
+        }
+
+        .hotspot-info {
+            font-size: 0.5rem;
+            color: var(--text-dim);
+        }
+
         .loading-msg {
             padding: 1rem;
             color: var(--text-dim);
@@ -449,6 +553,21 @@
             </div>
             <div class="panel-content" id="polymarketPanel">
                 <div class="loading-msg">Loading...</div>
+            </div>
+        </section>
+
+        <!-- Global Intelligence Map -->
+        <section class="panel" style="grid-column: span 4;">
+            <div class="panel-header">
+                <span class="panel-title">Global Activity Monitor</span>
+                <span class="panel-count" id="mapLegend">
+                    <span style="color: var(--green);">● Low</span>
+                    <span style="color: var(--yellow); margin-left: 0.5rem;">● Elevated</span>
+                    <span style="color: var(--red); margin-left: 0.5rem;">● High</span>
+                </span>
+            </div>
+            <div class="panel-content" id="mapPanel" style="max-height: 400px; overflow: hidden;">
+                <div class="loading-msg">Loading map...</div>
             </div>
         </section>
     </main>
@@ -712,6 +831,107 @@
             return results;
         }
 
+        // Intelligence hotspots with coordinates (x%, y% on map)
+        const INTEL_HOTSPOTS = [
+            { id: 'dc', name: 'DC', subtext: 'Pentagon Pizza Index', lat: 38.9, lon: -77.0, keywords: ['pentagon', 'white house', 'washington', 'us military', 'cia', 'nsa', 'biden', 'trump'] },
+            { id: 'moscow', name: 'Moscow', subtext: 'Kremlin Activity', lat: 55.75, lon: 37.6, keywords: ['russia', 'putin', 'kremlin', 'moscow', 'russian'] },
+            { id: 'beijing', name: 'Beijing', subtext: 'PLA/MSS Activity', lat: 39.9, lon: 116.4, keywords: ['china', 'beijing', 'chinese', 'xi jinping', 'taiwan strait', 'pla'] },
+            { id: 'kyiv', name: 'Kyiv', subtext: 'Conflict Zone', lat: 50.45, lon: 30.5, keywords: ['ukraine', 'kyiv', 'zelensky', 'ukrainian', 'donbas', 'crimea'] },
+            { id: 'taipei', name: 'Taipei', subtext: 'Strait Watch', lat: 25.03, lon: 121.5, keywords: ['taiwan', 'taipei', 'taiwanese', 'strait'] },
+            { id: 'tehran', name: 'Tehran', subtext: 'IRGC Activity', lat: 35.7, lon: 51.4, keywords: ['iran', 'tehran', 'iranian', 'irgc', 'hezbollah', 'nuclear'] },
+            { id: 'jerusalem', name: 'Tel Aviv', subtext: 'Mossad/IDF', lat: 32.07, lon: 34.78, keywords: ['israel', 'israeli', 'gaza', 'hamas', 'idf', 'netanyahu', 'mossad'] },
+            { id: 'pyongyang', name: 'Pyongyang', subtext: 'DPRK Watch', lat: 39.03, lon: 125.75, keywords: ['north korea', 'kim jong', 'pyongyang', 'dprk', 'korean missile'] },
+            { id: 'london', name: 'London', subtext: 'GCHQ/MI6', lat: 51.5, lon: -0.12, keywords: ['uk', 'britain', 'british', 'mi6', 'gchq', 'london'] },
+            { id: 'brussels', name: 'Brussels', subtext: 'NATO HQ', lat: 50.85, lon: 4.35, keywords: ['nato', 'eu', 'european union', 'brussels'] }
+        ];
+
+        // Convert lat/lon to map position (simple equirectangular projection)
+        function latLonToXY(lat, lon, width, height) {
+            const x = ((lon + 180) / 360) * width;
+            const y = ((90 - lat) / 180) * height;
+            return { x, y };
+        }
+
+        // Analyze news for hotspot activity
+        function analyzeHotspotActivity(allNews) {
+            const results = {};
+
+            INTEL_HOTSPOTS.forEach(spot => {
+                let score = 0;
+                let matchedHeadlines = [];
+
+                allNews.forEach(item => {
+                    const title = item.title.toLowerCase();
+                    const matchedKeywords = spot.keywords.filter(kw => title.includes(kw));
+                    if (matchedKeywords.length > 0) {
+                        score += matchedKeywords.length;
+                        if (item.isAlert) score += 3; // Boost for alert keywords
+                        matchedHeadlines.push(item.title);
+                    }
+                });
+
+                let level = 'low';
+                if (score >= 8) level = 'high';
+                else if (score >= 3) level = 'elevated';
+
+                results[spot.id] = { level, score, headlines: matchedHeadlines.slice(0, 3) };
+            });
+
+            return results;
+        }
+
+        // Render the global map
+        function renderGlobalMap(activityData) {
+            const panel = document.getElementById('mapPanel');
+
+            // Simple world map SVG (equirectangular)
+            const mapSVG = `
+                <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                            <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#1a1a1a" stroke-width="0.5"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)"/>
+                    <!-- Simplified continent outlines -->
+                    <path class="land" d="M150,120 Q200,100 280,110 Q320,105 350,120 Q380,140 370,180 Q350,220 300,240 Q250,250 200,230 Q160,200 150,160 Z" /> <!-- North America -->
+                    <path class="land" d="M250,280 Q280,260 300,280 Q320,320 310,380 Q280,420 250,400 Q230,360 240,320 Z" /> <!-- South America -->
+                    <path class="land" d="M440,100 Q520,90 580,100 Q620,110 640,140 Q650,180 620,200 Q580,220 520,210 Q470,200 450,170 Q440,140 440,100 Z" /> <!-- Europe -->
+                    <path class="land" d="M480,220 Q580,200 650,240 Q700,280 680,340 Q620,400 550,380 Q490,340 470,290 Q460,250 480,220 Z" /> <!-- Africa -->
+                    <path class="land" d="M650,80 Q750,70 850,100 Q900,140 880,200 Q850,260 780,280 Q700,290 660,250 Q630,200 640,150 Q650,100 650,80 Z" /> <!-- Asia -->
+                    <path class="land" d="M800,320 Q860,300 900,340 Q920,400 880,420 Q820,430 790,400 Q770,360 800,320 Z" /> <!-- Australia -->
+                </svg>
+            `;
+
+            let hotspotsHTML = '';
+            const mapWidth = 1000;
+            const mapHeight = 500;
+
+            INTEL_HOTSPOTS.forEach(spot => {
+                const { x, y } = latLonToXY(spot.lat, spot.lon, mapWidth, mapHeight);
+                const activity = activityData[spot.id] || { level: 'low', score: 0 };
+                const xPercent = (x / mapWidth) * 100;
+                const yPercent = (y / mapHeight) * 100;
+
+                hotspotsHTML += `
+                    <div class="hotspot ${activity.level}" style="left: ${xPercent}%; top: ${yPercent}%;">
+                        <div class="hotspot-dot"></div>
+                        <div class="hotspot-label">
+                            ${spot.name}
+                            <div class="hotspot-info">${spot.subtext}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            panel.innerHTML = `
+                <div class="world-map">
+                    ${mapSVG}
+                    ${hotspotsHTML}
+                </div>
+            `;
+        }
+
         // Fetch Polymarket predictions
         async function fetchPolymarket() {
             try {
@@ -932,6 +1152,11 @@
                 renderHeatmap(sectors);
                 renderCommodities(commodities);
                 renderPolymarket(polymarket);
+
+                // Analyze all news for global map
+                const allNews = [...politics, ...tech, ...finance, ...gov];
+                const activityData = analyzeHotspotActivity(allNews);
+                renderGlobalMap(activityData);
 
                 const now = new Date();
                 setStatus(`Updated ${now.toLocaleTimeString()}`);
