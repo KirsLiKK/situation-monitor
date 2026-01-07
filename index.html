@@ -860,8 +860,13 @@
         .chokepoint {
             position: absolute;
             transform: translate(-50%, -50%);
-            pointer-events: none;
+            pointer-events: auto;
             z-index: 18;
+            cursor: pointer;
+        }
+
+        .chokepoint:hover .chokepoint-icon {
+            transform: scale(1.2);
         }
 
         .chokepoint-icon {
@@ -905,6 +910,138 @@
             white-space: nowrap;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+        }
+
+        /* Chokepoint Popup */
+        .chokepoint-popup {
+            display: none;
+            position: absolute;
+            z-index: 100;
+            background: rgba(5, 8, 15, 0.95);
+            border: 1px solid #0066cc;
+            min-width: 260px;
+            max-width: 320px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 170, 255, 0.15);
+            pointer-events: auto;
+        }
+
+        .chokepoint-popup.visible {
+            display: block;
+        }
+
+        .chokepoint-popup.alert {
+            border-color: #ffaa00;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 170, 0, 0.2);
+        }
+
+        .chokepoint-popup-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #0a3050;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chokepoint-popup-title {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #00aaff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .chokepoint-popup.alert .chokepoint-popup-title {
+            color: #ffaa00;
+        }
+
+        .chokepoint-popup-status {
+            font-size: 0.55rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 2px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .chokepoint-popup-status.normal { background: #00aaff; color: #000; }
+        .chokepoint-popup-status.alert { background: #ffaa00; color: #000; }
+
+        .chokepoint-popup-info {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #0a3050;
+        }
+
+        .chokepoint-popup-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            padding: 0.25rem 0;
+        }
+
+        .chokepoint-popup-stat-label {
+            color: #0a8090;
+        }
+
+        .chokepoint-popup-stat-value {
+            color: #e8e8e8;
+            font-weight: bold;
+        }
+
+        .chokepoint-popup-desc {
+            font-size: 0.6rem;
+            color: #8090a0;
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid #0a3050;
+            line-height: 1.5;
+        }
+
+        .chokepoint-popup-headlines {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .chokepoint-popup-headline {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #0a3050;
+            font-size: 0.6rem;
+            color: #e8e8e8;
+        }
+
+        .chokepoint-popup-headline:last-child {
+            border-bottom: none;
+        }
+
+        .chokepoint-popup-headline a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .chokepoint-popup-headline a:hover {
+            color: #00aaff;
+        }
+
+        .chokepoint-popup-empty {
+            padding: 0.75rem 1rem;
+            font-size: 0.55rem;
+            color: #0a8090;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .chokepoint-popup-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: #0a8090;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+
+        .chokepoint-popup-close:hover {
+            color: #00aaff;
         }
 
         /* Earthquake markers */
@@ -2361,11 +2498,56 @@
 
         // Shipping chokepoints for supply chain monitoring
         const SHIPPING_CHOKEPOINTS = [
-            { id: 'suez', name: 'Suez', lat: 30.0, lon: 32.5, keywords: ['suez', 'red sea', 'houthi', 'canal'] },
-            { id: 'panama', name: 'Panama', lat: 9.1, lon: -79.7, keywords: ['panama canal', 'panama'] },
-            { id: 'hormuz', name: 'Hormuz', lat: 26.5, lon: 56.3, keywords: ['hormuz', 'strait of hormuz', 'persian gulf'] },
-            { id: 'malacca', name: 'Malacca', lat: 2.5, lon: 101.5, keywords: ['malacca', 'singapore strait'] },
-            { id: 'bosphorus', name: 'Bosphorus', lat: 41.1, lon: 29.0, keywords: ['bosphorus', 'black sea', 'turkish strait'] }
+            {
+                id: 'suez',
+                name: 'Suez Canal',
+                lat: 30.0,
+                lon: 32.5,
+                keywords: ['suez', 'red sea', 'houthi', 'canal'],
+                desc: 'Critical waterway connecting Mediterranean to Red Sea. ~12% of global trade. Currently threatened by Houthi attacks.',
+                traffic: '~50 ships/day',
+                region: 'Egypt'
+            },
+            {
+                id: 'panama',
+                name: 'Panama Canal',
+                lat: 9.1,
+                lon: -79.7,
+                keywords: ['panama canal', 'panama'],
+                desc: 'Links Atlantic and Pacific oceans. ~5% of global trade. Facing drought-related capacity restrictions.',
+                traffic: '~40 ships/day',
+                region: 'Panama'
+            },
+            {
+                id: 'hormuz',
+                name: 'Strait of Hormuz',
+                lat: 26.5,
+                lon: 56.3,
+                keywords: ['hormuz', 'strait of hormuz', 'persian gulf'],
+                desc: 'Only sea route from Persian Gulf to open ocean. ~21% of global oil passes through daily.',
+                traffic: '~20 tankers/day',
+                region: 'Iran/Oman'
+            },
+            {
+                id: 'malacca',
+                name: 'Malacca Strait',
+                lat: 2.5,
+                lon: 101.5,
+                keywords: ['malacca', 'singapore strait'],
+                desc: 'Main shipping route between Indian and Pacific oceans. ~25% of global trade including ~25% of oil.',
+                traffic: '~80 ships/day',
+                region: 'Malaysia/Singapore'
+            },
+            {
+                id: 'bosphorus',
+                name: 'Bosphorus Strait',
+                lat: 41.1,
+                lon: 29.0,
+                keywords: ['bosphorus', 'black sea', 'turkish strait'],
+                desc: 'Only route between Black Sea and Mediterranean. Critical for Russian/Ukrainian grain exports.',
+                traffic: '~45 ships/day',
+                region: 'Turkey'
+            }
         ];
 
         // Cyber threat regions
@@ -2434,7 +2616,7 @@
         }
 
         // Render the global map - Situation Room Style with accurate borders
-        async function renderGlobalMap(activityData, earthquakes = [], shippingAlerts = []) {
+        async function renderGlobalMap(activityData, earthquakes = [], allNews = []) {
             const panel = document.getElementById('mapPanel');
             const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
 
@@ -2574,9 +2756,32 @@
             // Shipping chokepoints
             SHIPPING_CHOKEPOINTS.forEach(cp => {
                 const pos = toPercent(cp.lon, cp.lat);
-                const isAlert = shippingAlerts.some(a => cp.keywords.some(k => a.toLowerCase().includes(k)));
+
+                // Find matching headlines for this chokepoint
+                const matchedHeadlines = allNews.filter(item => {
+                    const title = (item.title || '').toLowerCase();
+                    return cp.keywords.some(kw => title.includes(kw));
+                }).slice(0, 5).map(item => ({
+                    title: item.title,
+                    link: item.link,
+                    source: item.source
+                }));
+
+                const isAlert = matchedHeadlines.length > 0;
+
+                // Store chokepoint data as JSON
+                const cpData = encodeURIComponent(JSON.stringify({
+                    ...cp,
+                    isAlert,
+                    headlines: matchedHeadlines
+                }));
+
                 overlaysHTML += `
-                    <div class="chokepoint ${isAlert ? 'alert' : ''}" style="left: ${pos.x}%; top: ${pos.y}%;">
+                    <div class="chokepoint ${isAlert ? 'alert' : ''}"
+                         style="left: ${pos.x}%; top: ${pos.y}%;"
+                         data-chokepoint-id="${cp.id}"
+                         data-chokepoint-info="${cpData}"
+                         onclick="showChokepointPopup(event, '${cp.id}')">
                         <div class="chokepoint-icon"></div>
                         <div class="chokepoint-label">${cp.name}</div>
                     </div>
@@ -2622,15 +2827,19 @@
                 `;
             });
 
-            // Add popup container
+            // Add popup containers
             overlaysHTML += `<div class="hotspot-popup" id="hotspotPopup"></div>`;
+            overlaysHTML += `<div class="chokepoint-popup" id="chokepointPopup"></div>`;
 
             document.getElementById('mapOverlays').innerHTML = overlaysHTML;
 
-            // Close popup when clicking outside
+            // Close popups when clicking outside
             document.getElementById('worldMapContainer').addEventListener('click', (e) => {
                 if (!e.target.closest('.hotspot') && !e.target.closest('.hotspot-popup')) {
                     hideHotspotPopup();
+                }
+                if (!e.target.closest('.chokepoint') && !e.target.closest('.chokepoint-popup')) {
+                    hideChokepointPopup();
                 }
             });
         }
@@ -2641,6 +2850,9 @@
 
             const hotspotEl = document.querySelector(`[data-hotspot-id="${hotspotId}"]`);
             if (!hotspotEl) return;
+
+            // Hide chokepoint popup if open
+            hideChokepointPopup();
 
             const activityData = JSON.parse(decodeURIComponent(hotspotEl.dataset.hotspotActivity));
             const popup = document.getElementById('hotspotPopup');
@@ -2715,6 +2927,91 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Show chokepoint popup
+        function showChokepointPopup(event, chokepointId) {
+            event.stopPropagation();
+
+            const cpEl = document.querySelector(`[data-chokepoint-id="${chokepointId}"]`);
+            if (!cpEl) return;
+
+            // Hide hotspot popup if open
+            hideHotspotPopup();
+
+            const cpData = JSON.parse(decodeURIComponent(cpEl.dataset.chokepointInfo));
+            const popup = document.getElementById('chokepointPopup');
+
+            // Build headlines HTML
+            let headlinesHTML = '';
+            if (cpData.headlines && cpData.headlines.length > 0) {
+                headlinesHTML = cpData.headlines.map(h => `
+                    <div class="chokepoint-popup-headline">
+                        <a href="${h.link || '#'}" target="_blank">${escapeHtml(h.title)}</a>
+                    </div>
+                `).join('');
+            } else {
+                headlinesHTML = '<div class="chokepoint-popup-empty">No recent headlines for this chokepoint</div>';
+            }
+
+            // Build popup content
+            popup.innerHTML = `
+                <button class="chokepoint-popup-close" onclick="hideChokepointPopup()">&times;</button>
+                <div class="chokepoint-popup-header">
+                    <span class="chokepoint-popup-title">${escapeHtml(cpData.name)}</span>
+                    <span class="chokepoint-popup-status ${cpData.isAlert ? 'alert' : 'normal'}">${cpData.isAlert ? 'ALERT' : 'NORMAL'}</span>
+                </div>
+                <div class="chokepoint-popup-info">
+                    <div class="chokepoint-popup-stat">
+                        <span class="chokepoint-popup-stat-label">Region</span>
+                        <span class="chokepoint-popup-stat-value">${escapeHtml(cpData.region)}</span>
+                    </div>
+                    <div class="chokepoint-popup-stat">
+                        <span class="chokepoint-popup-stat-label">Traffic</span>
+                        <span class="chokepoint-popup-stat-value">${escapeHtml(cpData.traffic)}</span>
+                    </div>
+                </div>
+                <div class="chokepoint-popup-desc">${escapeHtml(cpData.desc)}</div>
+                <div class="chokepoint-popup-headlines">
+                    ${headlinesHTML}
+                </div>
+            `;
+
+            // Set popup class for styling
+            popup.className = `chokepoint-popup visible ${cpData.isAlert ? 'alert' : ''}`;
+
+            // Position popup near the chokepoint
+            const cpRect = cpEl.getBoundingClientRect();
+            const mapContainer = document.getElementById('worldMapContainer');
+            const mapRect = mapContainer.getBoundingClientRect();
+
+            // Calculate position relative to map container
+            let left = cpRect.left - mapRect.left + 20;
+            let top = cpRect.top - mapRect.top - 10;
+
+            // Ensure popup stays within map bounds
+            const popupWidth = 280;
+            const popupHeight = 300;
+
+            if (left + popupWidth > mapRect.width) {
+                left = cpRect.left - mapRect.left - popupWidth - 20;
+            }
+            if (top + popupHeight > mapRect.height) {
+                top = mapRect.height - popupHeight - 10;
+            }
+            if (top < 10) top = 10;
+            if (left < 10) left = 10;
+
+            popup.style.left = left + 'px';
+            popup.style.top = top + 'px';
+        }
+
+        // Hide chokepoint popup
+        function hideChokepointPopup() {
+            const popup = document.getElementById('chokepointPopup');
+            if (popup) {
+                popup.classList.remove('visible');
+            }
         }
 
         // Fetch Congressional trades - uses news RSS since APIs are locked down
@@ -3782,13 +4079,7 @@
                 // Render map with earthquakes and shipping alert data
                 if (isPanelEnabled('map')) {
                     const activityData = analyzeHotspotActivity(allNews);
-                    // Extract shipping alerts from news
-                    const shippingAlerts = allNews.map(n => n.title || '').filter(t =>
-                        t.toLowerCase().includes('suez') || t.toLowerCase().includes('panama') ||
-                        t.toLowerCase().includes('hormuz') || t.toLowerCase().includes('houthi') ||
-                        t.toLowerCase().includes('red sea') || t.toLowerCase().includes('shipping')
-                    );
-                    await renderGlobalMap(activityData, earthquakes, shippingAlerts);
+                    await renderGlobalMap(activityData, earthquakes, allNews);
                 }
                 if (isPanelEnabled('mainchar')) {
                     const mainCharRankings = calculateMainCharacter(allNews);
