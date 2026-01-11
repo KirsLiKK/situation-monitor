@@ -131,6 +131,48 @@
             <div class="panel-content" id="mapPanel" style="max-height: none; height: 480px; overflow: hidden; background: #0a1a14; position: relative;">
                 <svg id="mapSvg" style="width:100%;height:100%;"></svg>
                 <div id="mapTooltip" style="position:absolute;display:none;background:rgba(0,20,15,0.95);border:1px solid #00ff88;padding:10px 14px;border-radius:4px;font-size:11px;color:#00ff88;pointer-events:none;z-index:1000;max-width:280px;font-family:monospace;line-height:1.4;"></div>
+                <!-- Enhanced Iran Popup -->
+                <div id="iranPopup" style="position:absolute;display:none;background:rgba(10,15,12,0.98);border:1px solid #ff4444;padding:0;border-radius:6px;font-size:11px;color:#e0e0e0;z-index:1001;width:380px;font-family:monospace;box-shadow:0 4px 20px rgba(0,0,0,0.5);overflow:hidden;">
+                    <div style="background:linear-gradient(90deg,#3a1515,#2a1010);padding:12px 15px;border-bottom:1px solid #4a2020;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#ff4444;font-weight:bold;font-size:13px;">☢ IRAN SITUATION</span>
+                            <span style="background:#ff4444;color:#000;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:bold;">HIGH THREAT</span>
+                        </div>
+                        <div style="color:#888;font-size:9px;margin-top:4px;">Nuclear program • Regional proxy network • Sanctions regime</div>
+                    </div>
+                    <div style="display:flex;">
+                        <div style="flex:1;padding:12px 15px;border-right:1px solid #2a2020;">
+                            <div style="color:#ff6666;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Key Entities</div>
+                            <div style="font-size:10px;line-height:1.6;">
+                                <div>🔴 <span style="color:#ff8888;">IRGC</span> — Revolutionary Guard Corps</div>
+                                <div>🔴 <span style="color:#ff8888;">Quds Force</span> — External operations</div>
+                                <div>🔴 <span style="color:#ff8888;">MOIS</span> — Intelligence ministry</div>
+                                <div>🔴 <span style="color:#ff8888;">AEOI</span> — Atomic Energy Org</div>
+                            </div>
+                            <div style="color:#ff6666;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px;">Proxy Network</div>
+                            <div style="font-size:10px;line-height:1.6;">
+                                <div>▸ Hezbollah (Lebanon)</div>
+                                <div>▸ Houthis (Yemen)</div>
+                                <div>▸ Hamas/PIJ (Gaza)</div>
+                                <div>▸ PMF militias (Iraq)</div>
+                            </div>
+                        </div>
+                        <div style="flex:1;padding:12px 15px;">
+                            <div style="color:#ff6666;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Nuclear Status</div>
+                            <div id="iranNuclearStatus" style="font-size:10px;line-height:1.5;margin-bottom:12px;">
+                                <div>Enrichment: <span style="color:#ffaa00;">60%+ (weapons-grade threshold)</span></div>
+                                <div>Breakout time: <span style="color:#ff6666;">~2 weeks estimated</span></div>
+                                <div>Sites: Natanz, Fordow, Arak</div>
+                            </div>
+                            <div style="color:#ff6666;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Live Intel</div>
+                            <div id="iranLiveData" style="font-size:10px;color:#aaa;">Loading...</div>
+                        </div>
+                    </div>
+                    <div style="border-top:1px solid #2a2020;padding:10px 15px;background:#1a1515;">
+                        <div style="color:#ff6666;font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Latest Headlines</div>
+                        <div id="iranNewsSection" style="font-size:10px;color:#ccc;line-height:1.5;">Loading news...</div>
+                    </div>
+                </div>
                 <div class="map-zoom-controls" id="mapZoomControls">
                     <button class="map-zoom-btn" id="zoomInBtn">+</button>
                     <button class="map-zoom-btn" id="zoomOutBtn">−</button>
@@ -275,6 +317,82 @@
 
                         return html;
                     }
+
+                    // Enhanced Iran popup handling
+                    const iranPopup = document.getElementById('iranPopup');
+                    let iranPopupTimeout = null;
+
+                    async function showIranPopup(event) {
+                        const rect = mapPanel.getBoundingClientRect();
+                        iranPopup.style.display = 'block';
+
+                        // Position popup - check if it fits on the right, otherwise show on left
+                        const popupWidth = 380;
+                        let leftPos = event.clientX - rect.left + 20;
+                        if (leftPos + popupWidth > rect.width) {
+                            leftPos = event.clientX - rect.left - popupWidth - 20;
+                        }
+                        iranPopup.style.left = Math.max(10, leftPos) + 'px';
+                        iranPopup.style.top = Math.max(10, event.clientY - rect.top - 100) + 'px';
+
+                        // Fetch live data
+                        const liveDataEl = document.getElementById('iranLiveData');
+                        const newsEl = document.getElementById('iranNewsSection');
+
+                        try {
+                            // Fetch weather and flights
+                            const [weather, flights] = await Promise.all([
+                                getWeather(35.7, 51.4),
+                                getFlightCount(35.7, 51.4)
+                            ]);
+
+                            let liveHtml = '';
+                            liveHtml += `<div>🕐 Tehran: ${getLocalTime(51.4)}</div>`;
+                            if (weather) {
+                                liveHtml += `<div>${weather.condition} ${weather.temp}°F</div>`;
+                            }
+                            if (flights !== null) {
+                                liveHtml += `<div>✈️ ${flights} aircraft in area</div>`;
+                            }
+                            liveDataEl.innerHTML = liveHtml || 'Data unavailable';
+                        } catch (e) {
+                            liveDataEl.innerHTML = 'Error loading data';
+                        }
+
+                        // Fetch Iran news from GDELT
+                        try {
+                            const newsRes = await fetch('https://api.gdeltproject.org/api/v2/doc/doc?query=iran (nuclear OR irgc OR sanctions OR tehran)&mode=artlist&maxrecords=5&format=json&sort=date');
+                            const newsData = await newsRes.json();
+                            if (newsData.articles && newsData.articles.length > 0) {
+                                newsEl.innerHTML = newsData.articles.slice(0, 4).map(a =>
+                                    `<div style="margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #2a2020;">
+                                        <a href="${a.url}" target="_blank" style="color:#ddd;text-decoration:none;">
+                                            ${a.title?.substring(0, 70)}${a.title?.length > 70 ? '...' : ''}
+                                        </a>
+                                        <div style="font-size:9px;color:#666;">${a.domain} • ${new Date(a.seendate).toLocaleDateString()}</div>
+                                    </div>`
+                                ).join('');
+                            } else {
+                                newsEl.innerHTML = '<div style="color:#666;">No recent news available</div>';
+                            }
+                        } catch (e) {
+                            newsEl.innerHTML = '<div style="color:#666;">Error loading news</div>';
+                        }
+                    }
+
+                    function hideIranPopup() {
+                        iranPopupTimeout = setTimeout(() => {
+                            iranPopup.style.display = 'none';
+                        }, 200);
+                    }
+
+                    // Keep popup open when hovering over it
+                    iranPopup.addEventListener('mouseenter', () => {
+                        if (iranPopupTimeout) clearTimeout(iranPopupTimeout);
+                    });
+                    iranPopup.addEventListener('mouseleave', () => {
+                        iranPopup.style.display = 'none';
+                    });
 
                     // Threat level colors
                     const threatColors = {
@@ -620,6 +738,13 @@
                                     .attr('fill', 'transparent')
                                     .attr('class', 'hotspot-hit')
                                     .on('mouseenter', async function(event) {
+                                        // Special handling for Tehran - show enhanced Iran popup
+                                        if (h.name === 'Tehran') {
+                                            if (iranPopupTimeout) clearTimeout(iranPopupTimeout);
+                                            showIranPopup(event);
+                                            return;
+                                        }
+
                                         const rect = mapPanel.getBoundingClientRect();
                                         const levelLabel = h.level.charAt(0).toUpperCase() + h.level.slice(1);
                                         tooltip.style.display = 'block';
@@ -629,11 +754,16 @@
                                         tooltip.innerHTML = html;
                                     })
                                     .on('mousemove', function(event) {
+                                        if (h.name === 'Tehran') return; // Iran popup doesn't follow mouse
                                         const rect = mapPanel.getBoundingClientRect();
                                         tooltip.style.left = (event.clientX - rect.left + 15) + 'px';
                                         tooltip.style.top = (event.clientY - rect.top - 10) + 'px';
                                     })
                                     .on('mouseleave', function() {
+                                        if (h.name === 'Tehran') {
+                                            hideIranPopup();
+                                            return;
+                                        }
                                         tooltip.style.display = 'none';
                                     });
                             }
