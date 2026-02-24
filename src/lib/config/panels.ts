@@ -26,6 +26,7 @@ export type PanelId =
 	| 'ai'
 	| 'layoffs'
 	| 'venezuela'
+	| 'ukraine'
 	| 'greenland'
 	| 'iran'
 	| 'leaders'
@@ -35,6 +36,7 @@ export type PanelId =
 	| 'fed';
 
 export const PANELS: Record<PanelId, PanelConfig> = {
+	ukraine: { name: '乌克兰局势', priority: 2 },
 	map: { name: 'Global Map', priority: 1 },
 	politics: { name: 'World / Geopolitical', priority: 1 },
 	tech: { name: 'Technology / AI', priority: 1 },
