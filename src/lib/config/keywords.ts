@@ -69,6 +69,7 @@ export const REGION_KEYWORDS: Record<string, string[]> = {
 };
 
 export const TOPIC_KEYWORDS: Record<string, string[]> = {
+	ukraine: ['ukraine', 'russia', 'zelensky', 'kyiv', 'war', 'donbas', 'putin', 'nato'],
 	CYBER: ['cyber', 'hack', 'ransomware', 'malware', 'breach', 'apt', 'vulnerability'],
 	NUCLEAR: ['nuclear', 'icbm', 'warhead', 'nonproliferation', 'uranium', 'plutonium'],
 	CONFLICT: ['war', 'military', 'troops', 'invasion', 'strike', 'missile', 'combat', 'offensive'],
